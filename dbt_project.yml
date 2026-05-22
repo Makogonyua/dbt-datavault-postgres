@@ -15,12 +15,22 @@ target-path: target
 vars:
   load_date: 'current_timestamp'
 
+  automate_dv:
+    hash: "MD5"
+    enable_native_hashes: true
+
 models:
   jaffle_shop_dbtvault:
     stage:
       tags:
         - 'stage'
       materialized: view
+    cdm:
+      tags:
+        - 'marts'
+    business_vault:
+      tags:
+        - 'business_vault'
     raw_vault:
       tags:
         - 'raw_vault'

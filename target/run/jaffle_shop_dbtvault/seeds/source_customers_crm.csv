@@ -1,0 +1,12 @@
+
+    
+    
+    truncate table "postgres"."dbt"."source_customers_crm";
+    -- dbt seed --
+    
+          insert into "postgres"."dbt"."source_customers_crm" ("email", "country", "age") values
+          (%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s)
+      
+
+;
+  

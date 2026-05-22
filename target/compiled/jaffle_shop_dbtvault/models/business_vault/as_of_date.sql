@@ -37,6 +37,24 @@ with rawdata as (
      + 
     
     p6.generated_number * power(2, 6)
+     + 
+    
+    p7.generated_number * power(2, 7)
+     + 
+    
+    p8.generated_number * power(2, 8)
+     + 
+    
+    p9.generated_number * power(2, 9)
+     + 
+    
+    p10.generated_number * power(2, 10)
+     + 
+    
+    p11.generated_number * power(2, 11)
+     + 
+    
+    p12.generated_number * power(2, 12)
     
     
     + 1
@@ -64,6 +82,24 @@ with rawdata as (
      cross join 
     
     p as p6
+     cross join 
+    
+    p as p7
+     cross join 
+    
+    p as p8
+     cross join 
+    
+    p as p9
+     cross join 
+    
+    p as p10
+     cross join 
+    
+    p as p11
+     cross join 
+    
+    p as p12
     
     
 
@@ -71,7 +107,7 @@ with rawdata as (
 
     select *
     from unioned
-    where generated_number <= 90
+    where generated_number <= 4169
     order by generated_number
 
 
@@ -83,7 +119,7 @@ all_periods as (
     select (
         
 
-    TO_DATE('2021/01/01', 'yyyy/mm/dd') + ((interval '1 day') * (row_number() over (order by generated_number) - 1))
+    TO_DATE('2015/01/01', 'yyyy/mm/dd') + ((interval '1 day') * (row_number() over (order by generated_number) - 1))
 
 
     ) as date_day
@@ -95,7 +131,7 @@ filtered as (
 
     select *
     from all_periods
-    where date_day <= TO_DATE('2021/04/01', 'yyyy/mm/dd')
+    where date_day <= TO_DATE('2026/06/01', 'yyyy/mm/dd')
 
 )
 

@@ -74,7 +74,7 @@ new_rows_as_of AS (
     
     WHERE a.AS_OF_DATE >= (SELECT LAST_SAFE_LOAD_DATETIME FROM last_safe_load_datetime)
     UNION
-    SELECT as_of_date
+    SELECT AS_OF_DATE
     FROM as_of_grain_new_entries
 ),
 
@@ -114,7 +114,7 @@ backfill AS (
         a.AS_OF_DATE,
 
         COALESCE(DECODE(MAX(ENCODE(sat_customer_src.customer_pk, 'hex')), 'hex'),
-                 CAST('0000000000000000' AS BYTEA))
+                 CAST('00000000000000000000000000000000' AS BYTEA))
         AS sat_customer_PK,
 
         COALESCE(MAX(sat_customer_src.load_date),
@@ -122,7 +122,7 @@ backfill AS (
         AS sat_customer_LDTS,
 
         COALESCE(DECODE(MAX(ENCODE(sat_customer_crm_src.customer_pk, 'hex')), 'hex'),
-                 CAST('0000000000000000' AS BYTEA))
+                 CAST('00000000000000000000000000000000' AS BYTEA))
         AS sat_customer_crm_PK,
 
         COALESCE(MAX(sat_customer_crm_src.load_date),
@@ -160,7 +160,7 @@ new_rows AS (
         a.AS_OF_DATE,
 
         COALESCE(DECODE(MAX(ENCODE(sat_customer_src.customer_pk, 'hex')), 'hex'),
-                 CAST('0000000000000000' AS BYTEA))
+                 CAST('00000000000000000000000000000000' AS BYTEA))
         AS sat_customer_PK,
 
         COALESCE(MAX(sat_customer_src.load_date),
@@ -168,7 +168,7 @@ new_rows AS (
         AS sat_customer_LDTS,
 
         COALESCE(DECODE(MAX(ENCODE(sat_customer_crm_src.customer_pk, 'hex')), 'hex'),
-                 CAST('0000000000000000' AS BYTEA))
+                 CAST('00000000000000000000000000000000' AS BYTEA))
         AS sat_customer_crm_PK,
 
         COALESCE(MAX(sat_customer_crm_src.load_date),

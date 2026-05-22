@@ -1,5 +1,9 @@
 {{
-    config(enabled=True)
+    config(
+        enabled=True,
+        materialized='table'
+    )
+    
 }}
 
 {% set source_model = ['stg_customers', 'stg_customers_crm'] %}

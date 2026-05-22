@@ -32,7 +32,7 @@ derived_columns AS (
     last_name,
     email,
     email AS CUSTOMER_KEY,
-    'CSV_CUSTOMERS'::TEXT AS RECORD_SOURCE
+    'CSV_CUSTOMERS' AS RECORD_SOURCE
 
     FROM source_data
 ),
@@ -50,9 +50,9 @@ hashed_columns AS (
 
     DECODE(MD5(NULLIF(UPPER(TRIM(CAST(email AS VARCHAR))), '')), 'hex') AS CUSTOMER_PK,
 
-    DECODE(MD5(CONCAT(
-        COALESCE(NULLIF(UPPER(TRIM(CAST(first_name AS VARCHAR))), ''), '^^'), '||',
-        COALESCE(NULLIF(UPPER(TRIM(CAST(id AS VARCHAR))), ''), '^^'), '||',
+    DECODE(MD5(CONCAT_WS('||',
+        COALESCE(NULLIF(UPPER(TRIM(CAST(first_name AS VARCHAR))), ''), '^^'),
+        COALESCE(NULLIF(UPPER(TRIM(CAST(id AS VARCHAR))), ''), '^^'),
         COALESCE(NULLIF(UPPER(TRIM(CAST(last_name AS VARCHAR))), ''), '^^')
     )), 'hex') AS CUSTOMER_HASHDIFF
 

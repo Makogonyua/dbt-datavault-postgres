@@ -9,10 +9,10 @@ WITH source_data AS (
 ),
 
 latest_records AS (
-    SELECT b.ORDER_PK, b.ORDER_HASHDIFF, b.order_date, b.status, b.EFFECTIVE_FROM, b.LOAD_DATE, b.RECORD_SOURCE
+    SELECT b.ORDER_PK, b.ORDER_HASHDIFF, b.LOAD_DATE
     FROM (
-        SELECT current_records.ORDER_PK, current_records.ORDER_HASHDIFF, current_records.order_date, current_records.status, current_records.EFFECTIVE_FROM, current_records.LOAD_DATE, current_records.RECORD_SOURCE,
-            RANK() OVER (
+        SELECT current_records.ORDER_PK, current_records.ORDER_HASHDIFF, current_records.LOAD_DATE,
+            ROW_NUMBER() OVER (
                PARTITION BY current_records.ORDER_PK
                ORDER BY current_records.LOAD_DATE DESC
             ) AS rank
@@ -26,43 +26,32 @@ latest_records AS (
     WHERE b.rank = 1
 ),
 
-first_record_in_set AS (
-    SELECT * FROM (
-        SELECT
-        sd.ORDER_PK, sd.ORDER_HASHDIFF, sd.order_date, sd.status, sd.EFFECTIVE_FROM, sd.LOAD_DATE, sd.RECORD_SOURCE,
-        RANK() OVER (
-                PARTITION BY sd.ORDER_PK
-                ORDER BY sd.LOAD_DATE ASC
-            ) as asc_rank
-        FROM source_data as sd
-    ) AS rin
-    WHERE rin.asc_rank = 1
-),
-
 unique_source_records AS (
     SELECT
         b.ORDER_PK, b.ORDER_HASHDIFF, b.order_date, b.status, b.EFFECTIVE_FROM, b.LOAD_DATE, b.RECORD_SOURCE
     FROM (
-        SELECT DISTINCT
+        SELECT
             sd.ORDER_PK, sd.ORDER_HASHDIFF, sd.order_date, sd.status, sd.EFFECTIVE_FROM, sd.LOAD_DATE, sd.RECORD_SOURCE,
-            LAG(sd.ORDER_HASHDIFF) OVER (
+            LAG(
+                sd.ORDER_HASHDIFF,
+                1,
+                COALESCE(lr.ORDER_HASHDIFF,
+                         CAST('FFFFFFFF' AS BYTEA))
+            ) OVER (
                 PARTITION BY sd.ORDER_PK
-                ORDER BY sd.LOAD_DATE ASC) as prev_hashdiff
-        FROM source_data as sd
+                ORDER BY sd.LOAD_DATE ASC,
+                         sd.EFFECTIVE_FROM ASC
+            ) AS prev_hashdiff
+        FROM source_data AS sd
+        LEFT OUTER JOIN latest_records AS lr
+            ON sd.ORDER_PK = lr.ORDER_PK
         ) AS b
     WHERE b.ORDER_HASHDIFF != b.prev_hashdiff
 ),
 
 records_to_insert AS (
-        SELECT frin.ORDER_PK, frin.ORDER_HASHDIFF, frin.order_date, frin.status, frin.EFFECTIVE_FROM, frin.LOAD_DATE, frin.RECORD_SOURCE
-        FROM first_record_in_set AS frin
-        LEFT JOIN LATEST_RECORDS lr
-            ON lr.ORDER_PK = frin.ORDER_PK
-            AND lr.ORDER_HASHDIFF = frin.ORDER_HASHDIFF
-            WHERE lr.ORDER_HASHDIFF IS NULL
-        UNION
-        SELECT usr.ORDER_PK, usr.ORDER_HASHDIFF, usr.order_date, usr.status, usr.EFFECTIVE_FROM, usr.LOAD_DATE, usr.RECORD_SOURCE
-        FROM unique_source_records as usr
+    SELECT usr.ORDER_PK, usr.ORDER_HASHDIFF, usr.order_date, usr.status, usr.EFFECTIVE_FROM, usr.LOAD_DATE, usr.RECORD_SOURCE
+    FROM unique_source_records AS usr
 )
 
 SELECT * FROM records_to_insert

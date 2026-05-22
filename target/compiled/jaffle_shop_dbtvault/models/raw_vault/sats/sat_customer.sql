@@ -9,10 +9,10 @@ WITH source_data AS (
 ),
 
 latest_records AS (
-    SELECT b.CUSTOMER_PK, b.CUSTOMER_HASHDIFF, b.first_name, b.last_name, b.id, b.EFFECTIVE_FROM, b.LOAD_DATE, b.RECORD_SOURCE
+    SELECT b.CUSTOMER_PK, b.CUSTOMER_HASHDIFF, b.LOAD_DATE
     FROM (
-        SELECT current_records.CUSTOMER_PK, current_records.CUSTOMER_HASHDIFF, current_records.first_name, current_records.last_name, current_records.id, current_records.EFFECTIVE_FROM, current_records.LOAD_DATE, current_records.RECORD_SOURCE,
-            RANK() OVER (
+        SELECT current_records.CUSTOMER_PK, current_records.CUSTOMER_HASHDIFF, current_records.LOAD_DATE,
+            ROW_NUMBER() OVER (
                PARTITION BY current_records.CUSTOMER_PK
                ORDER BY current_records.LOAD_DATE DESC
             ) AS rank
@@ -26,43 +26,32 @@ latest_records AS (
     WHERE b.rank = 1
 ),
 
-first_record_in_set AS (
-    SELECT * FROM (
-        SELECT
-        sd.CUSTOMER_PK, sd.CUSTOMER_HASHDIFF, sd.first_name, sd.last_name, sd.id, sd.EFFECTIVE_FROM, sd.LOAD_DATE, sd.RECORD_SOURCE,
-        RANK() OVER (
-                PARTITION BY sd.CUSTOMER_PK
-                ORDER BY sd.LOAD_DATE ASC
-            ) as asc_rank
-        FROM source_data as sd
-    ) AS rin
-    WHERE rin.asc_rank = 1
-),
-
 unique_source_records AS (
     SELECT
         b.CUSTOMER_PK, b.CUSTOMER_HASHDIFF, b.first_name, b.last_name, b.id, b.EFFECTIVE_FROM, b.LOAD_DATE, b.RECORD_SOURCE
     FROM (
-        SELECT DISTINCT
+        SELECT
             sd.CUSTOMER_PK, sd.CUSTOMER_HASHDIFF, sd.first_name, sd.last_name, sd.id, sd.EFFECTIVE_FROM, sd.LOAD_DATE, sd.RECORD_SOURCE,
-            LAG(sd.CUSTOMER_HASHDIFF) OVER (
+            LAG(
+                sd.CUSTOMER_HASHDIFF,
+                1,
+                COALESCE(lr.CUSTOMER_HASHDIFF,
+                         CAST('FFFFFFFF' AS BYTEA))
+            ) OVER (
                 PARTITION BY sd.CUSTOMER_PK
-                ORDER BY sd.LOAD_DATE ASC) as prev_hashdiff
-        FROM source_data as sd
+                ORDER BY sd.LOAD_DATE ASC,
+                         sd.EFFECTIVE_FROM ASC
+            ) AS prev_hashdiff
+        FROM source_data AS sd
+        LEFT OUTER JOIN latest_records AS lr
+            ON sd.CUSTOMER_PK = lr.CUSTOMER_PK
         ) AS b
     WHERE b.CUSTOMER_HASHDIFF != b.prev_hashdiff
 ),
 
 records_to_insert AS (
-        SELECT frin.CUSTOMER_PK, frin.CUSTOMER_HASHDIFF, frin.first_name, frin.last_name, frin.id, frin.EFFECTIVE_FROM, frin.LOAD_DATE, frin.RECORD_SOURCE
-        FROM first_record_in_set AS frin
-        LEFT JOIN LATEST_RECORDS lr
-            ON lr.CUSTOMER_PK = frin.CUSTOMER_PK
-            AND lr.CUSTOMER_HASHDIFF = frin.CUSTOMER_HASHDIFF
-            WHERE lr.CUSTOMER_HASHDIFF IS NULL
-        UNION
-        SELECT usr.CUSTOMER_PK, usr.CUSTOMER_HASHDIFF, usr.first_name, usr.last_name, usr.id, usr.EFFECTIVE_FROM, usr.LOAD_DATE, usr.RECORD_SOURCE
-        FROM unique_source_records as usr
+    SELECT usr.CUSTOMER_PK, usr.CUSTOMER_HASHDIFF, usr.first_name, usr.last_name, usr.id, usr.EFFECTIVE_FROM, usr.LOAD_DATE, usr.RECORD_SOURCE
+    FROM unique_source_records AS usr
 )
 
 SELECT * FROM records_to_insert

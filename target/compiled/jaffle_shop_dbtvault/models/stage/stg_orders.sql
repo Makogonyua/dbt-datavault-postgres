@@ -33,7 +33,7 @@ derived_columns AS (
     order_date,
     status,
     id AS ORDER_KEY,
-    'CSV_ORDERS'::TEXT AS RECORD_SOURCE
+    'CSV_ORDERS' AS RECORD_SOURCE
 
     FROM source_data
 ),
@@ -51,8 +51,8 @@ hashed_columns AS (
 
     DECODE(MD5(NULLIF(UPPER(TRIM(CAST(id AS VARCHAR))), '')), 'hex') AS ORDER_PK,
 
-    DECODE(MD5(CONCAT(
-        COALESCE(NULLIF(UPPER(TRIM(CAST(order_date AS VARCHAR))), ''), '^^'), '||',
+    DECODE(MD5(CONCAT_WS('||',
+        COALESCE(NULLIF(UPPER(TRIM(CAST(order_date AS VARCHAR))), ''), '^^'),
         COALESCE(NULLIF(UPPER(TRIM(CAST(status AS VARCHAR))), ''), '^^')
     )), 'hex') AS ORDER_HASHDIFF
 

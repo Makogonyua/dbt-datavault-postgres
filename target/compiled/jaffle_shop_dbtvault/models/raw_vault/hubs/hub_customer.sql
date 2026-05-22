@@ -40,9 +40,6 @@ row_rank_union AS (SELECT DISTINCT ON (ru.CUSTOMER_PK) ru.*
 records_to_insert AS (
     SELECT a.CUSTOMER_PK, a.CUSTOMER_KEY, a.LOAD_DATE, a.RECORD_SOURCE
     FROM row_rank_union AS a
-    LEFT JOIN "postgres"."dbt"."hub_customer" AS d
-    ON a.CUSTOMER_PK = d.CUSTOMER_PK
-    WHERE d.CUSTOMER_PK IS NULL
 )
 
 SELECT * FROM records_to_insert

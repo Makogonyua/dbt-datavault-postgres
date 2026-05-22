@@ -1,7 +1,6 @@
 {{
     config(
-        enabled=True
-    )
+        enabled=True)
 }}
 
 {%- set source_model = 'stg_customers' -%}
